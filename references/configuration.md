@@ -65,6 +65,19 @@ not supported. Give staging a plain password login for test accounts.
 | `command` | `command` | any shell command: gets the SQL on stdin, prints a JSON array of row objects on stdout. Runs from the config's folder. MySQL, an ORM shell, an admin HTTP endpoint… |
 | `none` | | checks can only read the page |
 
+A `command` script only has to honour that contract. For example, over sqlite:
+
+```sh
+#!/bin/sh
+# SQL on stdin -> JSON rows on stdout
+exec python3 -c '
+import sys, json, sqlite3
+con = sqlite3.connect(sys.argv[1]); con.row_factory = sqlite3.Row
+cur = con.execute(sys.stdin.read())
+rows = [dict(r) for r in cur.fetchall()] if cur.description else []
+con.commit(); print(json.dumps(rows))' "$1"
+```
+
 In a check or a hook, `db` offers `db.sql(q)` → list of dicts, `db.one(q)` → dict or None,
 `db.value(q)` → first column of the first row, `db.lit(v)` → a quoted SQL literal.
 

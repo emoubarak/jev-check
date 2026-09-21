@@ -148,6 +148,11 @@ Name each boolean after what it proves. For a refusal, check that **the write di
 happen AND nothing else was silently changed to make room**. That second check is where the
 real regressions hide.
 
+In an audit, all checks of one persona share **one account and its rows** for the whole run.
+A check that writes (publishes, deletes, upgrades) needs its own rows: give it its own option
+name (`options=("draft_b",)`) or its own persona. Otherwise the next check starts from a state
+it never set up.
+
 ## Five things that will bite you
 
 1. **jev can never type a password.** Its observer excludes `password`, `file` and `hidden`

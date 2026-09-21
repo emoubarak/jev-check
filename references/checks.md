@@ -35,6 +35,13 @@ In an audit, every persona the selected checks need is created once, up front, w
 union of their `options`. Checks run in file order, and the harness signs out and back in
 only when the persona changes.
 
+**So every check of a persona acts on the same account and the same rows for the whole run.**
+A check that changes state changes what the later checks of that persona start from: if one
+check publishes the `draft`, the next check that opens `{draft}` finds it already live and
+fails on a state it never set up. Give each check that writes its own option name
+(`options=("draft_a",)`, `options=("draft_b",)`, both created by `create_account`) or its own
+persona. Read-only checks can share freely.
+
 ## `state` helpers
 
 | helper | returns |
