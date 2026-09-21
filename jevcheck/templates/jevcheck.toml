@@ -1,0 +1,73 @@
+# jevcheck — where the agent may go, how it signs in, what its answers are checked against.
+# Relative paths are relative to this file. `env:NAME` reads an environment variable.
+
+[target]
+# Your STAGING origin. Never production: real users, real money, real emails.
+base = "https://staging.example.com"
+# A whitelist: any other host is refused, whatever --base says.
+allowed_hosts = ["staging.example.com", "localhost", "127.0.0.1"]
+
+# When you point --base at a local dev server, assert it talks to the staging backend.
+# [target.local_guard]
+# file = ".env"
+# key = "VITE_API_URL"
+# must_contain = "staging"
+
+[browser]
+# Written into localStorage (and cookies) before the first page: dismiss the consent banner
+# (a fixed banner intercepts clicks), pin the language so an English goal reads English.
+seed_path = "/"
+busy_selector = "[aria-busy='true'], .animate-spin, .spinner"
+
+[browser.local_storage]
+# cookie_consent = "accepted"
+# i18nextLng = "en"
+
+[browser.cookies]
+# consent = "yes"
+
+[login]
+# The agent can never type a password: the harness fills this form over CDP instead.
+path = "/login"
+username_selector = "input[type=email]"
+password_selector = "input[type=password]"
+submit_selector = ""                    # empty: submit the <form> around the password field
+success_path_prefix = "/app"            # signed in once the URL path starts with this…
+success_selector = ""                   # …or once this element exists
+error_pattern = "incorrect|invalid|wrong|confirm your email"   # JS regex, case-insensitive
+timeout = 45
+
+[datastore]
+# Where every verdict is read. The STAGING database.
+kind = "none"            # sqlite | postgres | supabase | command | none
+# path = "db.sqlite3"                                   # sqlite
+# dsn = "env:STAGING_DATABASE_URL"                      # postgres (run with --extra postgres)
+# project_ref = "your-staging-ref"                      # supabase (Management API)
+# token = "env:SUPABASE_ACCESS_TOKEN"
+# command = "./scripts/staging-sql.sh"                  # SQL on stdin → JSON rows on stdout
+
+[accounts]
+hooks = "jevcheck_hooks.py"   # create_account / delete_account for throw-away personas
+keep_hours = 12               # a --keep account lives this long, then the next run deletes it
+
+# One section per account state you want to look at the app as.
+# No `email` → throw-away: created by hooks.create_account for the run, deleted after.
+[personas.free]
+description = "a brand-new account on the free plan"
+
+[personas.pro]
+description = "a paying account"
+
+# An account that already exists on staging:
+# [personas.admin]
+# email = "env:JEV_ADMIN_EMAIL"
+# password = "env:JEV_ADMIN_PASSWORD"
+# vars = { org = "acme" }                 # usable as {org} in --path
+
+[audit]
+checks = "jevcheck_checks.py"
+
+[run]
+artifacts = ".jevcheck"       # runs, screenshots, the account ledger (add it to .gitignore)
+budget = 180                  # wall-clock seconds per goal
+# env_file = ".env.jevcheck"  # KEY=VALUE file for TYPESAFE_API_KEY etc. (never commit it)

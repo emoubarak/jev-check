@@ -1,0 +1,30 @@
+[project]
+name = "jev-check"
+version = "1.0.0"
+description = "Ask the real app, as a real account state: a browser agent reads your deployed staging app and every answer is checked against the database."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+# Pinned by commit on purpose: jev-ultrafast is 0.1.0 and `Agent.__init__` is not a stable
+# API yet. A silent break in a tool you only run by hand is a break you find at the worst
+# possible moment. Bump deliberately, then run `jevcheck doctor` and the demo audit.
+dependencies = [
+  "jev-ultrafast @ git+https://github.com/browser-use/jev-ultrafast@1231850a0bf1a0c0341fe408ef1668dbbfdfac46",
+]
+
+[project.optional-dependencies]
+# Only for `[datastore] kind = "postgres"`. sqlite, supabase and command need nothing extra.
+postgres = ["psycopg[binary]>=3.2"]
+
+[project.scripts]
+jevcheck = "jevcheck.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["jevcheck"]

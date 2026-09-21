@@ -1,0 +1,33 @@
+# jevcheck config for the bundled Launchpad demo (python3 server.py).
+
+[target]
+base = "http://127.0.0.1:8765"
+allowed_hosts = ["127.0.0.1", "localhost"]
+
+[login]
+path = "/login"
+username_selector = "#email"
+password_selector = "#password"
+success_path_prefix = "/app"
+error_pattern = "incorrect"
+
+[datastore]
+kind = "sqlite"
+path = "demo.db"
+
+[accounts]
+hooks = "jevcheck_hooks.py"
+keep_hours = 12
+
+[personas.free]
+description = "a free account: one live project allowed"
+
+[personas.pro]
+description = "a Pro account: unlimited live projects"
+
+[audit]
+checks = "jevcheck_checks.py"
+
+[run]
+artifacts = ".jevcheck"
+budget = 120
