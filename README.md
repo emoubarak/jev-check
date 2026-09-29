@@ -1,12 +1,18 @@
-# jev-check
+# jev-check: AI browser agent testing for staging apps, verified against your database
 
 **Ask the real app, as a real account state.**
 
-An agent skill (Claude Code, Codex, OpenClaw, and any agent that reads `SKILL.md`) that puts a
-fast browser agent on your **staging** app, signed in as a throw-away account in exactly the
-state you need (free, paid, lapsed, team member, stranger, anonymous), and has it follow a
-plain-English goal. Then the **database** says whether it worked. The agent's "done" is only a
-claim.
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](pyproject.toml)
+
+jev-check is an open-source **agent skill for Claude Code, Codex, OpenClaw and any coding agent
+that reads `SKILL.md`**. It puts a fast **AI browser agent** ([jev-ultrafast](https://github.com/browser-use/jev-ultrafast))
+on your **staging app**, signed in as a throw-away account in exactly the state you need (free,
+paid, lapsed, team member, stranger, anonymous), and has it follow a plain-English goal. Then
+the **database** says whether it worked. The agent's "done" is only a claim.
+
+Use it for **end-to-end testing of plan gates, paywalls, roles, permissions and cross-account
+isolation** (RLS, multi-tenant leaks), and to reproduce a bug report on a real account state.
 
 ```text
 $ jevcheck audit
@@ -23,7 +29,7 @@ free-plan gate let the second project through and silently took the first one of
 is the class of bug mocks and unit tests miss: the deployed front, the backend and the
 permissions disagreeing with each other.
 
-## What you get
+## What you get: a browser-agent QA tool for permissions and paywalls
 
 - **`jevcheck ask`**: one look, no test to write. "What does a free account get when it
   tries X?" It prints what the agent did, what the page said, **every control that account
@@ -46,7 +52,7 @@ permissions disagreeing with each other.
 The `SKILL.md` teaches your coding agent when to reach for it, how to set it up for your app
 **by reading your code**, how to write goals and checks, and how to read a result honestly.
 
-## Try it in two minutes (bundled demo, nothing to configure)
+## Quick start: try the demo in two minutes
 
 Requirements: [uv](https://docs.astral.sh/uv/), Chrome/Chromium/Brave/Edge, and a
 `TYPESAFE_API_KEY` (jev's decision model, https://docs.typesafe.ai).
@@ -61,7 +67,7 @@ kill %1; LAUNCHPAD_BUG=1 python3 server.py &          # the same app with a sile
 uv run --project ../.. jevcheck audit                 # free_publish_blocked FAILS, and says why
 ```
 
-## Install as a skill
+## How to install jev-check as a Claude Code skill (or any agent skill)
 
 Copy (or clone) this folder where your agent loads skills, for example
 `~/.claude/skills/jev-check/` for Claude Code (all projects) or `.claude/skills/jev-check/` in
@@ -88,7 +94,29 @@ Built on [jev-ultrafast](https://github.com/browser-use/jev-ultrafast) and
 from their own repositories and pinned by commit. browser-harness telemetry is switched off by
 default.
 
-## Not for
+## FAQ
+
+**How is this different from Playwright, Cypress or Selenium?**
+Those run scripts you write and maintain. jev-check runs a plain-English goal with an AI
+browser agent, and the verdict comes from a SQL query on your database, not from the agent.
+It complements your E2E suite: it finds what mocks and unit tests cannot, the front, the
+backend and the permissions disagreeing on a real deployed app.
+
+**Which agents and apps does it work with?**
+Any agent that loads `SKILL.md` (Claude Code, Codex, OpenClaw). Any web app with a staging
+environment, a password login and SQL access to its database (SQLite, Postgres, Supabase, or
+any command returning JSON rows).
+
+**Can it test a Supabase RLS policy or a multi-tenant data leak?**
+Yes, that is the sweet spot: sign in as account A, try to reach account B's data, and let
+the database confirm nothing changed.
+
+**Is it safe?**
+It refuses any host not on a fail-closed whitelist, refuses a local dev server wired to
+anything but staging, runs in its own Chrome with a throw-away profile, and deletes its
+accounts after every run.
+
+## When not to use jev-check
 
 Production (refused by design), CI gates (it needs a real browser and costs model calls),
 payment lifecycles (test those against your payment provider's test mode), SSO, magic-link
@@ -96,4 +124,4 @@ or CAPTCHA logins.
 
 ## License
 
-Commercial, per purchaser. See `LICENSE`.
+[MIT](LICENSE). Use it, fork it, ship it. Never point it at production.

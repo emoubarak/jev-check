@@ -4,13 +4,21 @@ version = "1.0.0"
 description = "Ask the real app, as a real account state: a browser agent reads your deployed staging app and every answer is checked against the database."
 readme = "README.md"
 requires-python = ">=3.12"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["browser-agent", "e2e-testing", "ai-agent", "claude-code", "skill", "staging", "permissions", "paywall", "qa"]
+authors = [{ name = "El Mahdi Moubarak" }]
 # Pinned by commit on purpose: jev-ultrafast is 0.1.0 and `Agent.__init__` is not a stable
 # API yet. A silent break in a tool you only run by hand is a break you find at the worst
 # possible moment. Bump deliberately, then run `jevcheck doctor` and the demo audit.
 dependencies = [
   "jev-ultrafast @ git+https://github.com/browser-use/jev-ultrafast@1231850a0bf1a0c0341fe408ef1668dbbfdfac46",
 ]
+
+[project.urls]
+Homepage = "https://github.com/emoubarak/jev-check"
+Repository = "https://github.com/emoubarak/jev-check"
+Issues = "https://github.com/emoubarak/jev-check/issues"
 
 [project.optional-dependencies]
 # Only for `[datastore] kind = "postgres"`. sqlite, supabase and command need nothing extra.

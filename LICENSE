@@ -1,31 +1,24 @@
-jev-check — Commercial License
-Copyright (c) 2026 El Mahdi Moubarak. All rights reserved.
+MIT License
 
-This license is granted to the person or organisation that purchased jev-check (the
-"Licensee"). By installing or using the software, the Licensee accepts these terms.
+Copyright (c) 2026 El Mahdi Moubarak
 
-1. Grant. The Licensee may install, run and modify the software, for any number of its own
-   projects, on any number of machines operated by the Licensee or its employees and
-   contractors working for it.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-2. Restrictions. The Licensee may not sell, sublicense, publish, share or otherwise
-   redistribute the software or a modified version of it, in whole or in substantial part,
-   including as part of another skill, plugin, template or product offered to third parties.
-   Configuration files, hooks and checks the Licensee writes for its own applications belong
-   to the Licensee and are not restricted.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-3. Updates. Updates published by the author for this product are covered by this license.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
-4. Third-party software. jev-check depends on, but does not include, jev-ultrafast and
-   browser-harness (both MIT License, Browser Use). Those packages are installed from their
-   own sources under their own licenses. Their APIs (TypeSafe, and any text-model provider
-   you configure) are third-party services with their own terms and pricing.
-
-5. No warranty. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-   PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
-   CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-   OR ITS USE. The Licensee is solely responsible for where it points the software: it is
-   designed for staging environments and must not be run against production systems.
-
-6. Termination. This license ends automatically if its terms are breached.
+The software is designed for staging environments. You are solely responsible
+for where you point it: never run it against production systems.
