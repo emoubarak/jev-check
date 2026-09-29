@@ -79,7 +79,10 @@ jevcheck ask --path "/p/some-handle" --goal "Confirm the page shows a Contact bu
 ```
 
 `--as` provisions one account in that state and deletes it at the end, even on failure.
-`--with` passes options to `create_account` (extra rows it should own). `{id}`, `{email}` and
+`--with` passes options to `create_account` (extra rows it should own). Use it for whatever
+the screen under test needs to be non-trivial: a second member in a team, or dated rows
+(`--with views` backdating events over 90 days) so a chart has an axis and a period filter
+has something to exclude. `{id}`, `{email}` and
 every var `create_account` returns are substituted in `--path`. It prints what the agent did,
 where it ended, what the page said (two observations), **what that account could click**, and
 the `--sql` rows. `--headed` to watch. `--keep` leaves the browser on the result and prints
