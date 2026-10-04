@@ -5,6 +5,8 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](pyproject.toml)
 
+![jevcheck audit on the bundled demo app: PASS, then FAIL once a silent billing regression ships, while the agent still says done](docs/demo.gif)
+
 jev-check is an open-source **agent skill for Claude Code, Codex, OpenClaw and any coding agent
 that reads `SKILL.md`**. It puts a fast **AI browser agent** ([jev-ultrafast](https://github.com/browser-use/jev-ultrafast))
 on your **staging app**, signed in as a throw-away account in exactly the state you need (free,
