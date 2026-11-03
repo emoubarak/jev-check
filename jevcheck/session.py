@@ -180,7 +180,7 @@ def login(cfg, base, email, password):
         close_tab(target)
 
 
-def logout(cfg, base):
+def logout(cfg, base, reseed=True):
     """Forget every session the dedicated profile holds, then put the seeded state back.
 
     Cookies browser-wide (an API on another origin keeps its own), and every storage type of
@@ -193,4 +193,4 @@ def logout(cfg, base):
             cdp(method, **params)
         except Exception:
             pass
-    return seed(cfg, base)
+    return seed(cfg, base) if reseed else {}

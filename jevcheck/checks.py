@@ -60,6 +60,8 @@ class Check:
     local_storage: object = None     # dict (None value = remove) or Callable[[Ctx], dict], set before the run
     expect_action: bool = False      # fail if the agent never acted: "nothing happened" proves nothing then
     budget: float = None             # wall-clock seconds, when the default is wasteful
+    viewport: str = None             # "phone", "tablet" or "390x844[@dpr]": emulate that screen
+    layout: bool = False             # add a `layout_clean` verdict: nothing off-screen, nothing covered
 
 
 def fill(path, account):

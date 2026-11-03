@@ -92,16 +92,24 @@ def settle(agent, busy_selector, timeout=8.0):
         pass
 
 
-def run_goal(url, goal, *, budget, busy_selector="", record_dir=None, before_close=None, echo=print):
+def run_goal(url, goal, *, budget, busy_selector="", record_dir=None, before_close=None, echo=print,
+             viewport=None, probe_layout=True):
     """Drive jev from `url` toward `goal`. Returns (state, error) — state is None only if the
-    page never loaded. `before_close(agent)` runs while the tab still exists (screenshots)."""
+    page never loaded. `before_close(agent)` runs while the tab still exists (screenshots).
+
+    `viewport` is (width, height, dpr) to emulate a screen. `probe_layout` reads the geometry
+    of the page the agent ended on into `state["layout"]` (see layout.py)."""
     from jev_ultrafast import Agent
+
+    from . import layout
 
     started = time.monotonic()
     agent, state, error = None, None, None
     try:
         agent = Agent(url, goal, record_dir=str(record_dir) if record_dir else None)
         disable_animations(agent)
+        if viewport:
+            layout.apply_viewport(agent.browser.session, viewport)
         settle(agent, busy_selector)
         deadline = started + budget
         for state in agent.run():
@@ -125,6 +133,8 @@ def run_goal(url, goal, *, budget, busy_selector="", record_dir=None, before_clo
                     state["page"] = fresh
                     break
                 time.sleep(0.3)
+            if probe_layout:
+                state["layout"] = layout.probe(agent.browser.session)
             if before_close:
                 try:
                     before_close(agent)

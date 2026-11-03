@@ -12,7 +12,9 @@
 | `timed out waiting for the app to accept the session` | `success_path_prefix` is wrong (where does the app land after sign-in?) or sign-in needs a second step |
 | the agent says `blocked` on the first page | it decided on a loader: set `busy_selector` to the app's spinner |
 | the agent says `blocked`, but a dialog is clearly open when you look | an animation the kill-stylesheet cannot reach (Web Animations API, canvas). Report which library |
-| clicks do nothing at the bottom of the page | a fixed cookie banner sits on top: seed its key in `[browser.local_storage]` or `[browser.cookies]` |
+| clicks do nothing at the bottom of the page | a fixed cookie banner sits on top: seed its key in `[browser.local_storage]` or `[browser.cookies]` (and if the banner covering the controls is itself the question, `--no-seed`) |
+| the layout probe reports nothing on a page you can see is broken | the goal ended before the state (menu closed), or the viewport is the 1120 px default: add `--viewport phone` and end the goal on the open menu |
+| `layout` flags an element that is meant to bleed off the edge | a false positive: pixels are not verdicts. Look at `--shot`, skip it |
 | every typed field fails | `TEXT_MODEL_API_KEY` is missing or out of credit |
 | `Page.captureScreenshot timed out` / `_IPCResponseTimeout` | per-step frames (`--record`) on a software rasteriser. Leave `--record` off. `--shot` uses a 30 s deadline |
 | a check fails once and passes on re-run | a flake. The agent is non-deterministic, so re-run `--only` before filing |

@@ -38,6 +38,10 @@ permissions disagreeing with each other.
   could click**, and the SQL rows you asked for.
 - **`jevcheck audit`**: standing checks (a path, a goal, a verdict read from the database),
   for plan gates, permissions and cross-account isolation.
+- **A screen-fit probe** (`--viewport phone`, `--no-seed`): after each run it reads the
+  geometry of the page the agent ended on and reports popups sticking out of the screen,
+  controls covered by a fixed banner, and sideways scroll. The bugs a text-reading agent and a
+  green build both miss. `Check(viewport="phone", layout=True)` makes it a standing guard.
 - **Throw-away accounts** in real states, created by your own hooks in the shape your
   production code writes them, deleted at the end of every run (on failure too), with a TTL
   sweep for anything a killed run left behind.

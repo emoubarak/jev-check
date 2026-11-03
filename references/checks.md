@@ -16,6 +16,8 @@ Check(
     local_storage=None,            # dict (None value = remove key) or callable(ctx), set before the run
     expect_action=False,           # True: 0 actions = FAIL
     budget=None,                   # seconds, when the default is wasteful
+    viewport=None,                 # "phone", "tablet" or "390x844@3": emulate that screen
+    layout=False,                  # True: also require layout_clean (nothing off-screen or covered)
 )
 
 CHECKS = [...]
@@ -52,6 +54,7 @@ persona. Read-only checks can share freely.
 | `actions(state)` | labels of what it clicked or typed, in order |
 | `offered(state)` | `(kind, label)` of every control the page offered at the end |
 | `status(state)` | jev's last word: `done`, `blocked`, or `ready` (stopped by a budget) |
+| `layout_clean(state)` | the page the agent ended on has nothing off-screen, nothing covered, no sideways scroll (`state["layout"]` holds the findings; `layout.findings(state)` lists them) |
 
 `result(**checks)` passes only if every named boolean is true. The failure line prints the
 names that were false, so **name them after what they prove**: `draft_still_unpublished`,
@@ -109,3 +112,18 @@ everyone else.
 - Values the agent must type come from the goal, copied by the text model: keep them short,
   plain ASCII. Better still, have `create_account` pre-create what the goal would type.
 - Read-only goals ("Read this page and stop once X is visible") cost one or two model calls.
+
+**A screen-fit guard.** The goal must end on the state to judge (menu open, picker open):
+
+```python
+Check(
+    key="phone_language_picker_fits", title="the language list stays on a 390 px screen",
+    viewport="phone", layout=True, expect_action=True,
+    goal="Open the menu, then open the language picker, then stop.",
+    verify=lambda ctx, state: result(picker_open=has_any(state, "English", "Français")),
+)
+```
+
+`layout=True` adds `layout_clean` to the verdict, so the check fails when the list sticks out
+or a banner covers a control. Seeded consent hides the banner problem: run the check with
+`--no-seed` too.

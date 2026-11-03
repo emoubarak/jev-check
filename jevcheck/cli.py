@@ -20,7 +20,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from . import accounts, agent, checks, chrome, config, session, shots, store
+from . import accounts, agent, checks, chrome, config, layout, session, shots, store
 
 TEMPLATES = Path(__file__).parent / "templates"
 
@@ -37,6 +37,12 @@ def _browser_flags(p):
     p.add_argument("--keep", action="store_true",
                    help="keep the accounts and the browser, print the credentials for a manual look")
     p.add_argument("--cdp-port", type=int, default=9333, help="first port tried for the dedicated Chrome")
+    p.add_argument("--viewport", metavar="SIZE",
+                   help="emulate a screen: phone (390x844), small-phone, tablet, laptop, or WIDTHxHEIGHT[@DPR]. "
+                        "The page's layout is then checked too: off-screen popups, covered controls, sideways scroll")
+    p.add_argument("--no-seed", action="store_true",
+                   help="first visit: do not write [browser.local_storage]/[browser.cookies], so the consent "
+                        "banner and any first-run UI are on screen, as for a new visitor")
 
 
 def parse_args(argv=None):
@@ -67,6 +73,7 @@ def parse_args(argv=None):
     p.add_argument("--sql", default="", help="a SELECT to run on the datastore afterwards")
     p.add_argument("--shot", default="", help="save a PNG of the final page here")
     p.add_argument("--shot-selector", default="", help="crop --shot to this element, e.g. \"[role=dialog]\"")
+    p.add_argument("--no-layout", action="store_true", help="skip the layout probe (it only reads geometry, no model calls)")
     p.add_argument("--json", action="store_true", help="also print a machine-readable summary as the last line")
 
     p = sub.add_parser("audit", help="run the checks from [audit] checks, each verified in the datastore")
@@ -253,8 +260,10 @@ def cmd_ask(args):
     run_dir = new_run_dir(cfg, "ask")
     proc = agent.start_browser(chrome, run_dir, headed=args.headed, port_start=args.cdp_port)
     made, state, error = [], None, None
+    viewport = layout.parse_viewport(args.viewport)
     try:
-        session.seed(cfg, base)
+        if not args.no_seed:
+            session.seed(cfg, base)
         account = None
         if args.persona:
             account = accounts.provision(cfg, db, args.persona, uuid.uuid4().hex[:6], args.options)
@@ -272,7 +281,7 @@ def cmd_ask(args):
         state, error = agent.run_goal(url, args.goal, budget=args.budget or cfg.budget,
                                       busy_selector=cfg.busy_selector,
                                       record_dir=run_dir / "frames" if args.record else None,
-                                      before_close=grab)
+                                      before_close=grab, viewport=viewport, probe_layout=not args.no_layout)
         if error:
             print(f"  !! {error}")
         if state is None:
@@ -287,6 +296,19 @@ def cmd_ask(args):
         print("\n--- what this account could click here")
         for kind, label in checks.offered(state):
             print(f"  {kind:<7} {label[:70]}")
+        problems = layout.findings(state)
+        if state.get("layout") is not None:
+            size = "x".join(str(n) for n in state["layout"].get("viewport", []))
+            print(f"\n--- layout at {size or 'the default window'}"
+                  + ("" if viewport else " (default window; pass --viewport phone for a phone)"))
+            if state["layout"].get("error"):
+                print(f"  probe failed: {state['layout']['error']}")
+            elif problems:
+                for problem in problems:
+                    print(f"  ! {problem}")
+                print("  Look at --shot before reporting: a decoration meant to bleed off the edge is not a bug.")
+            else:
+                print("  fits: nothing off-screen, nothing covered, no sideways scroll")
         sql_rows = None
         if args.sql:
             sql_rows = db.sql(args.sql)
@@ -296,7 +318,7 @@ def cmd_ask(args):
             print(json.dumps({
                 "status": state["status"], "final_url": page.get("url"), "error": error,
                 "actions": checks.actions(state), "offered": checks.offered(state),
-                "sql": sql_rows, "state": str(run_dir / "state.json"),
+                "layout": problems, "sql": sql_rows, "state": str(run_dir / "state.json"),
             }, default=str))
     finally:
         teardown_all(cfg, db, made, args.keep, base)
@@ -335,7 +357,8 @@ def cmd_audit(args):
     proc = agent.start_browser(chrome, run_dir, headed=args.headed, port_start=args.cdp_port)
     made, results = [], []
     try:
-        session.seed(cfg, base)
+        if not args.no_seed:
+            session.seed(cfg, base)
         run_id = uuid.uuid4().hex[:6]
         by_persona = {}
         for persona, options in needed.items():
@@ -348,7 +371,7 @@ def cmd_audit(args):
         for check in chosen:
             if signed_in is False or signed_in != check.persona:
                 if signed_in is not False:
-                    session.logout(cfg, base)
+                    session.logout(cfg, base, reseed=not args.no_seed)
                 if check.persona:
                     landed = sign_in(cfg, base, by_persona[check.persona])
                     print(f"\n-- signed in as {check.persona} → {landed['path']}")
@@ -393,6 +416,7 @@ def run_check(cfg, check, ctx, run_dir, args):
         url, goal,
         budget=check.budget or args.budget or cfg.budget, busy_selector=cfg.busy_selector,
         record_dir=run_dir / check.key / "frames" if args.record else None,
+        viewport=layout.parse_viewport(check.viewport or args.viewport),
     )
     if state is None:
         verdict = {"passed": False, "checks": {"page_loaded": False}}
@@ -405,6 +429,12 @@ def run_check(cfg, check, ctx, run_dir, args):
         (run_dir / check.key / "state.json").write_text(json.dumps(agent.dumpable(state), indent=2, default=str))
     acted = len((state or {}).get("history", []))
     verdict_checks = dict(verdict.get("checks", {}))
+    problems = layout.findings(state)
+    if check.layout and state is not None:
+        # An unreadable probe fails too: a silent failure must not look like a clean layout.
+        verdict_checks["layout_clean"] = layout.layout_clean(state)
+        for problem in problems:
+            print(f"   ! {problem}")
     if check.expect_action and not acted:
         # "The write did not happen" is trivially true when nothing was attempted.
         verdict_checks = {"agent_acted": False, **verdict_checks}
@@ -413,7 +443,7 @@ def run_check(cfg, check, ctx, run_dir, args):
         "key": check.key, "title": check.title, "persona": check.persona, "url": url, "goal": goal,
         "passed": passed, "checks": verdict_checks, "error": error or verdict.get("error"),
         "agent_status": (state or {}).get("status"), "final_url": ((state or {}).get("page") or {}).get("url"),
-        "actions": acted,
+        "actions": acted, "layout_findings": problems,
         "model_calls": len((state or {}).get("decisions", [])) + len((state or {}).get("text_calls", [])),
         "elapsed_s": round(time.monotonic() - started, 1),
     }

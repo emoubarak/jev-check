@@ -22,6 +22,9 @@ from the user's project (the folder holding `jevcheck.toml`).
   account's state and read what it actually sees.
 - **Before closing** a ticket about permissions, isolation, limits or billing surfaces:
   confirm the fix on the running app, not only in a unit test.
+- A change touches a **menu, popup, banner or any fixed element**: check it on a phone, with
+  and without the consent banner (see *Does it fit the screen?*). A green build and a
+  text-reading agent both miss "the list opens outside the screen".
 - You need to know whether a control is even **offered** to an account. `ask` prints
   everything the page let that account click, and that list is usually the whole answer.
 
@@ -127,6 +130,37 @@ jevcheck publish-shots <issue> before=before.png after=after.png
 before and the after from the same account state and the same goal, or the pair proves
 nothing. Skip screenshots for backend-only or timing bugs. `publish-shots` writes to GitHub,
 so confirm with the user before running it.
+
+## Does it fit the screen? (phone, first visit)
+
+The agent reads text; it cannot see that a menu opens half outside a phone, or that a fixed
+cookie banner sits on the last button. After every `ask` the harness reads the geometry of the
+page the agent **ended on** (open menus and pickers included) and prints a `layout` section:
+
+- `offscreen`: a control or popup sticking out of the screen (a language list clipped by its
+  container counts; a carousel item scrolling into view does not).
+- `covered`: a visible control whose centre is painted over by something else (cookie banner,
+  chat button, sticky bar), unless a modal dialog covers what is outside it.
+- `hscroll`: the page scrolls sideways, with the widest elements.
+
+```bash
+# the menu's language picker on a phone, as a NEW visitor (consent banner on screen)
+jevcheck ask --viewport phone --no-seed --path / --shot menu.png \
+  --goal "Open the menu, then open the language picker, then stop."
+```
+
+- `--viewport phone|small-phone|tablet|laptop|WxH[@dpr]` emulates the screen. Without it the
+  probe still runs, at jev's 1120 px window, which hides every phone bug.
+- `--no-seed` skips `[browser.local_storage]` / `[browser.cookies]`, so the consent banner and
+  first-run UI are shown. Seeding them (the default) is right for goals that must click
+  through, and wrong for this question: a real first-time visitor has the banner.
+- End the goal **on the state to judge** ("open the picker, then stop"): the probe sees only
+  the final page, so a closed menu proves nothing.
+- Findings are pixels, not verdicts. Read the `--shot` before reporting; a decoration meant to
+  bleed off the edge is a false positive. The probe makes no model calls.
+
+For a standing guard, add `viewport="phone", layout=True` to a `Check`: it then fails on
+`layout_clean` (an unreadable probe fails too). In an audit, `--viewport` applies to every check.
 
 ## Adding a durable check
 

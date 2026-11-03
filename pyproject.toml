@@ -1,6 +1,6 @@
 [project]
 name = "jev-check"
-version = "1.0.0"
+version = "1.1.0"
 description = "Ask the real app, as a real account state: a browser agent reads your deployed staging app and every answer is checked against the database."
 readme = "README.md"
 requires-python = ">=3.12"
