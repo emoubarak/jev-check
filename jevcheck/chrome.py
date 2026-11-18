@@ -49,8 +49,9 @@ def find_chrome():
     raise RuntimeError("no Chrome/Chromium/Brave found — install one or export BH_CHROME_PATH=/path/to/chrome")
 
 
-def free_port(start=9333, tries=20):
-    for port in range(start, start + tries):
+def free_port(start=9333, tries=200):
+    # each process starts at its own offset: two runs launched together both saw 9333 free and the second Chrome failed
+    for port in (start + (os.getpid() + i) % tries for i in range(tries)):
         with socket.socket() as s:
             try:
                 s.bind(("127.0.0.1", port))

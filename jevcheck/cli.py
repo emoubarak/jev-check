@@ -106,8 +106,17 @@ def preflight():
 
 
 def new_run_dir(cfg, prefix):
-    run_dir = cfg.artifacts / "runs" / f"{prefix}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
-    run_dir.mkdir(parents=True, exist_ok=True)
+    # pid in the name and exist_ok=False: two runs started in the same second used to share one folder (and one
+    # Chrome profile) and both broke
+    stamp = f"{prefix}-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{os.getpid()}"
+    run_dir = cfg.artifacts / "runs" / stamp
+    (cfg.artifacts / "runs").mkdir(parents=True, exist_ok=True)
+    for n in range(100):
+        try:
+            run_dir.mkdir(exist_ok=False)
+            break
+        except FileExistsError:
+            run_dir = cfg.artifacts / "runs" / f"{stamp}-{n + 2}"
     latest = cfg.artifacts / "runs" / "latest"
     try:
         latest.unlink(missing_ok=True)
