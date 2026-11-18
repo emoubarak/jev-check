@@ -118,21 +118,31 @@ def run_goal(url, goal, *, budget, busy_selector="", record_dir=None, before_clo
             layout.apply_viewport(agent.browser.session, viewport)
         settle(agent, busy_selector)
         deadline = started + budget
-        repeats, previous = 0, None
-        for state in agent.run():
-            last = (state["history"] or [{}])[-1]
-            echo(f"  {state['elapsed_ms']:>7} ms  {state['status']:<9} {(last.get('action') or '')[:64]}")
-            if time.monotonic() > deadline:
-                error = f"wall-clock budget of {budget:g}s exhausted"
+        repeats, previous, resumed = 0, None, 0
+        while True:
+            for state in agent.run():
+                last = (state["history"] or [{}])[-1]
+                echo(f"  {state['elapsed_ms']:>7} ms  {state['status']:<9} {(last.get('action') or '')[:64]}")
+                if time.monotonic() > deadline:
+                    error = f"wall-clock budget of {budget:g}s exhausted"
+                    break
+                # the same action on the same URL again and again (an element gone after a navigation, issue #7): stop and
+                # say it looped, instead of burning the whole model-call budget and answering "ready"
+                key = (last.get("action"), (state.get("page") or {}).get("url"))
+                repeats = repeats + 1 if key == previous and key[0] and key[0] != "Scroll down" else 0
+                previous = key
+                if repeats >= 5:
+                    error = f"loop: the agent repeated « {key[0][:60]} » 6 times without the page changing"
+                    break
+            # « blocked » while the page can still scroll down: jev's model gave up before the end of a long page (issue #2).
+            # Scroll one screen ourselves and let the agent look again, up to 8 times; a blocked at the bottom stands.
+            if error or (state or {}).get("status") != "blocked" or resumed >= 8 or not can_scroll_down(agent):
                 break
-            # the same action on the same URL again and again (an element gone after a navigation, issue #7): stop and
-            # say it looped, instead of burning the whole model-call budget and answering "ready"
-            key = (last.get("action"), (state.get("page") or {}).get("url"))
-            repeats = repeats + 1 if key == previous and key[0] and key[0] != "Scroll down" else 0
-            previous = key
-            if repeats >= 5:
-                error = f"loop: the agent repeated « {key[0][:60]} » 6 times without the page changing"
-                break
+            resumed += 1
+            scroll_down(agent)
+            echo("          resumed   (blocked before the end of the page: scrolled one screen)")
+            agent.state["status"], agent.state["decision"] = "ready", None
+            agent.state["page"] = agent.browser.observe(screenshot=False)
     except Exception as exc:  # jev's own action/call budget raises ValueError: keep the partial state
         error = f"{type(exc).__name__}: {exc}"
     finally:
@@ -163,6 +173,26 @@ def run_goal(url, goal, *, budget, busy_selector="", record_dir=None, before_clo
         state["elapsed_s"] = round(time.monotonic() - started, 1)
     return state, error
 
+
+
+def can_scroll_down(agent):
+    """The page (not an inner panel) still has content below the screen."""
+    from browser_harness.helpers import cdp
+    try:
+        r = cdp("Runtime.evaluate", session_id=agent.browser.session, returnByValue=True,
+                expression="(()=>{const e=document.scrollingElement||document.documentElement;return e.scrollTop+innerHeight<e.scrollHeight-4})()")
+        return bool(r.get("result", {}).get("value"))
+    except Exception:
+        return False
+
+
+def scroll_down(agent):
+    from browser_harness.helpers import cdp
+    try:
+        cdp("Runtime.evaluate", session_id=agent.browser.session, expression="window.scrollBy(0, Math.round(innerHeight*0.85))")
+        time.sleep(0.4)
+    except Exception:
+        pass
 
 def dumpable(state):
     """The state without the heavy parts (element tables, screenshots), for state.json."""
