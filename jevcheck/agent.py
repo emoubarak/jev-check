@@ -118,11 +118,20 @@ def run_goal(url, goal, *, budget, busy_selector="", record_dir=None, before_clo
             layout.apply_viewport(agent.browser.session, viewport)
         settle(agent, busy_selector)
         deadline = started + budget
+        repeats, previous = 0, None
         for state in agent.run():
             last = (state["history"] or [{}])[-1]
             echo(f"  {state['elapsed_ms']:>7} ms  {state['status']:<9} {(last.get('action') or '')[:64]}")
             if time.monotonic() > deadline:
                 error = f"wall-clock budget of {budget:g}s exhausted"
+                break
+            # the same action on the same URL again and again (an element gone after a navigation, issue #7): stop and
+            # say it looped, instead of burning the whole model-call budget and answering "ready"
+            key = (last.get("action"), (state.get("page") or {}).get("url"))
+            repeats = repeats + 1 if key == previous and key[0] and key[0] != "Scroll down" else 0
+            previous = key
+            if repeats >= 5:
+                error = f"loop: the agent repeated « {key[0][:60]} » 6 times without the page changing"
                 break
     except Exception as exc:  # jev's own action/call budget raises ValueError: keep the partial state
         error = f"{type(exc).__name__}: {exc}"
@@ -146,7 +155,10 @@ def run_goal(url, goal, *, budget, busy_selector="", record_dir=None, before_clo
                     before_close(agent)
                 except Exception as exc:
                     echo(f"  !! {type(exc).__name__}: {exc}")
-            agent.close()
+            try:
+                agent.close()
+            except Exception as exc:  # the browser connection already dropped: keep the partial result (issue #6)
+                echo(f"  !! closing the browser failed ({type(exc).__name__}: {exc}); partial result kept")
     if state is not None:
         state["elapsed_s"] = round(time.monotonic() - started, 1)
     return state, error
