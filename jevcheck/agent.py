@@ -92,6 +92,12 @@ def settle(agent, busy_selector, timeout=8.0):
         pass
 
 
+# jev reads what is on screen: on a phone, the target of a novice goal often sits below the fold, and the agent answered
+# `blocked` after zero or one scroll (issue #2). Spelling it out in every goal fixed the runs where it was tried.
+SCROLL_HINT = ("\n\n(The page can continue below the visible screen: before deciding that something is missing, "
+               "scroll down until the end of the page.)")
+
+
 def run_goal(url, goal, *, budget, busy_selector="", record_dir=None, before_close=None, echo=print,
              viewport=None, probe_layout=True):
     """Drive jev from `url` toward `goal`. Returns (state, error) — state is None only if the
@@ -106,7 +112,7 @@ def run_goal(url, goal, *, budget, busy_selector="", record_dir=None, before_clo
     started = time.monotonic()
     agent, state, error = None, None, None
     try:
-        agent = Agent(url, goal, record_dir=str(record_dir) if record_dir else None)
+        agent = Agent(url, goal + SCROLL_HINT, record_dir=str(record_dir) if record_dir else None)
         disable_animations(agent)
         if viewport:
             layout.apply_viewport(agent.browser.session, viewport)
