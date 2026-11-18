@@ -56,6 +56,9 @@ def apply_viewport(session, viewport):
     width, height, scale = viewport
     cdp("Emulation.setDeviceMetricsOverride", session_id=session, width=width, height=height,
         deviceScaleFactor=scale, mobile=width < 800, screenWidth=width, screenHeight=height)
+    # A phone has a touch screen: without this, (pointer: coarse) and (hover: none) never match and every
+    # touch-only layout (bigger targets, a key bar, no hover menus) stays hidden from the probe.
+    cdp("Emulation.setTouchEmulationEnabled", session_id=session, enabled=width < 800, maxTouchPoints=5)
 
 
 PROBE = r"""
